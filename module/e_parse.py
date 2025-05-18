@@ -9,7 +9,11 @@ from pyrogram.types import (
     InlineKeyboardMarkup as Ikm,
     InlineKeyboardButton as Ikb,
     CallbackQuery,
+    MessageEntity
 )
+
+from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
+
 from config.config import e_cfg, DP, bot_cfg
 from utiles.download_file import download_file
 from utiles.ehArchiveD import EHentai, GMetaData
@@ -31,7 +35,7 @@ scheduler.start()
     total_request_limit=e_cfg.total_request_limit,
 )
 @logger.catch
-async def ep(_, msg: Message):
+async def ep(_: Client, msg: Message):
     user_id = msg.from_user.id
 
     # 检查功能禁用状态
@@ -39,6 +43,18 @@ async def ep(_, msg: Message):
         return await msg.reply("解析功能暂未开放")
 
     user_limiter = user_limiters[user_id]
+
+    if e_cfg.member_group is not None:
+        try:
+            user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
+        except UserNotParticipant as e:
+            return await msg.reply(f"您没有权限使用本 Bot。({type(e).__name__})")
+        except Exception as e:
+            await msg.reply(f"解析失败：{type(e).__name__}, 错误信息：{e}")
+            raise e
+        if user_status.status not in [enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+            return await msg.reply(f"您没有权限使用本 Bot。({str(user_status.status)})")
+            
 
     # 全局与用户限流检查
     if not global_limiter.has_capacity():
@@ -55,11 +71,45 @@ async def ep(_, msg: Message):
 
         async with lock:
             m = await msg.reply("解析中...")
-            try:
-                erp = await ehentai_parse(msg.text, True)
-            except Exception as e:
-                await m.edit(f"解析失败：{type(e).__name__}, 错误信息：{e}")
-                raise e
+
+            if e_cfg.estimate_usage:
+                #TODO: 加入 GP 预计算逻辑
+                try:
+                    estimation = await ehentai_estimate(msg.text)
+                except Exception as e:
+                    await m.edit(f"预估损耗失败：{type(e).__name__}, 错误信息：{e}")
+                    raise e
+                
+                # await msg.reply("您尚处测试，没有实际解析。")
+                # return 
+                
+                try:
+                    erp = await ehentai_parse_fastforward(estimation, True)
+                except Exception as e:
+                    await m.edit(f"解析直链失败：{type(e).__name__}, 错误信息：{e}")
+                    raise e
+                
+                if e_cfg.telegram_logger is not None:
+                    entities = [
+                        MessageEntity(type=enums.MessageEntityType.CODE,offset=len(str("用户 ")),length=len(str(msg.from_user.id))),
+                        MessageEntity(type=enums.MessageEntityType.TEXT_MENTION,offset=len(str("用户 " + str(msg.from_user.id) + "(")),length=len(str(msg.from_user.full_name)),user=msg.from_user),
+                        MessageEntity(type=enums.MessageEntityType.TEXT_LINK,offset=len("用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" +" 解析了 "),length=len(str(estimation.archiver_info.title)),url=str(msg.text))]
+                    log_message = "用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" \
+                                +" 解析了 "+str(estimation.archiver_info.title) \
+                                + (((" 损耗 "+str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                     " 损耗 "+str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
+                                  (" 损耗 "+str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB 配额."))
+                    try:
+                        await _.send_message(chat_id=e_cfg.telegram_logger,parse_mode=enums.ParseMode.MARKDOWN,text=log_message,entities=entities)
+                    except Exception as e:
+                        logger.error("无法在 Telegram 频道中发送解析日志。请检查 config/config.yaml->experimental.tg_logger 是否正确配置为记录目标群/频道/聊天。")
+            else:
+                try:
+                    erp = await ehentai_parse(msg.text, True)
+                except Exception as e:
+                    await m.edit(f"解析失败：{type(e).__name__}, 错误信息：{e}")
+                    raise e
+                
 
             d = f"{erp.archiver_info.gid}/{erp.archiver_info.token}"
             btn = Ikm(
@@ -80,7 +130,7 @@ async def ep(_, msg: Message):
             await m.delete()
 
             uc = parse_count.get_counter(user_id)
-            uc.add_count(erp.require_gp)
+            uc.add_count(erp.require_gp,erp.archiver_info.filesize)
             logger.info(
                 f"{msg.from_user.full_name} 归档 {msg.text} "
                 f"(今日 {uc.day_count} 个) "
@@ -96,6 +146,14 @@ class EPR:
     require_gp: int
     json_path: str = None
 
+@dataclass
+class Usage_Estimation:
+    archiver_info: "GMetaData"
+    e_hentai: EHentai
+    using_quota: bool
+    using_gp: bool
+    quota_usage: int
+    gp_usage: int
 
 async def ehentai_parse(url: str, o_json: bool = False) -> EPR:
     """解析e-hentai画廊链接"""
@@ -109,6 +167,19 @@ async def ehentai_parse(url: str, o_json: bool = False) -> EPR:
         return EPR(archiver_info, d_url, require_gp, json_path)
     return EPR(archiver_info, d_url, require_gp)
 
+async def ehentai_estimate(url: str) -> Usage_Estimation:
+    ehentai = EHentai(e_cfg.cookies, proxy=bot_cfg.proxy)
+    archiver_info = await ehentai.get_archiver_info(url)
+    require_gp = await ehentai.get_required_gp(archiver_info)
+    return Usage_Estimation(archiver_info,ehentai,require_gp==0,require_gp!=0,archiver_info.filesize,require_gp)
+
+async def ehentai_parse_fastforward(estimation: Usage_Estimation, o_json: bool = False) -> EPR:
+    d_url = await estimation.e_hentai.get_download_url(estimation.archiver_info)
+
+    if o_json:
+        json_path = estimation.e_hentai.save_gallery_info(estimation.archiver_info, DP)
+        return EPR(estimation.archiver_info, d_url, estimation.gp_usage, json_path)
+    return EPR(estimation.archiver_info, d_url, estimation.gp_usage)
 
 async def cancel_download(url: str) -> bool:
     """销毁下载"""

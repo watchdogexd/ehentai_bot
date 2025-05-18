@@ -16,3 +16,9 @@ whitelist: # 白名单用户, 不受任何限制 (可通过 https://t.me/getletb
   - 123456
 blacklist:
   - 123456 # 黑名单用户, 不允许使用解析功能 (可通过 https://t.me/getletbot 获取 ID)
+
+experimental:
+  estimate_usage: false # 是否预估损耗
+  tg_logger:  # 仅在预估损耗启用的条件下有效->将解析的信息发送到频道(-100+id),超级群组(同频道),普通群组(直接用-+id),个人(对机器人使用/getid) || 在需要的地方 /getid(bot要有消息权限在频道中) ;; 或者 Day Cleanup 有效
+  day_cleanup: false # 仅在配置了 tg_logger 的条件下有效。每天结算一次 GP 与 Quota Usage.
+  member_group: # 同 tg_logger, 传入频道/群组/超级群组的 chatid。传个人的这个API必报错。

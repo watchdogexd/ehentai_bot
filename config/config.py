@@ -81,6 +81,10 @@ class EConfig(Config):
         self.cookies: list = self.retrieve("cookies")
         self.disable: bool = self.retrieve("disable")
         self.download: bool = self.retrieve("download")
+        self.estimate_usage: bool = self.retrieve("experimental.estimate_usage")
+        self.telegram_logger: int = self.retrieve("experimental.tg_logger")
+        self.day_cleanup: bool = self.retrieve("experimental.day_cleanup")
+        self.member_group: int = self.retrieve("experimental.member_group")
 
 
 bot_cfg = BotConfig("bot.yaml")
