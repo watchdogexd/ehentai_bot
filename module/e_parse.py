@@ -44,16 +44,17 @@ async def ep(_: Client, msg: Message):
 
     user_limiter = user_limiters[user_id]
 
-    if e_cfg.member_group is not None:
-        try:
-            user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
-        except UserNotParticipant as e:
-            return await msg.reply(f"您没有权限使用本 Bot。({type(e).__name__})")
-        except Exception as e:
-            await msg.reply(f"解析失败：{type(e).__name__}, 错误信息：{e}")
-            raise e
-        if user_status.status not in [enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
-            return await msg.reply(f"您没有权限使用本 Bot。({str(user_status.status)})")
+    if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+        if e_cfg.member_group is not None:
+            try:
+                user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
+            except UserNotParticipant as e:
+                return await msg.reply(f"您没有权限使用本 Bot。({type(e).__name__})")
+            except Exception as e:
+                await msg.reply(f"解析失败：{type(e).__name__}, 错误信息：{e}")
+                raise e
+            if user_status.status not in [enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+                return await msg.reply(f"您没有权限使用本 Bot。({str(user_status.status)})")
             
 
     # 全局与用户限流检查
