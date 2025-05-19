@@ -22,3 +22,7 @@ experimental:
   tg_logger:  # 仅在预估损耗启用的条件下有效->将解析的信息发送到频道(-100+id),超级群组(同频道),普通群组(直接用-+id),个人(对机器人使用/getid) || 在需要的地方 /getid(bot要有消息权限在频道中) ;; 或者 Day Cleanup 有效
   day_cleanup: false # 仅在配置了 tg_logger 的条件下有效。每天结算一次 GP 与 Quota Usage.
   member_group: # 同 tg_logger, 传入频道/群组/超级群组的 chatid。传个人的这个API必报错。
+  credit: "" # 在每日 Summary 里面可以自动鸣谢
+  confirm_estimate_download: true # 使用中间界面确认是否解析直链
+  single_quota_limit: 0 # 设置为大于0的数字以启用单次 Quota 限制，白名单与 Admin 可以豁免。单位 bytes
+  single_gp_limit: 0 # 设置为大于0的数字以启用单次 GP 限制，白名单与 Admin 可以豁免。单位 GP

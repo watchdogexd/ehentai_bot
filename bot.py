@@ -40,11 +40,14 @@ async def menu(_, message):
         "sw": "开关解析功能",
         "count": "今日解析次数",
         "d": "开关下载",
+        "summary":"今日总结",
     }
     u_cmd = {
         "start": "开始",
         "help": "帮助",
     }
+    if e_cfg.credit:
+        u_cmd["credit"] = "鸣谢"
 
     await app.delete_bot_commands()
 

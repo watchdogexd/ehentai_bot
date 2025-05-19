@@ -76,7 +76,10 @@ async def ep(_: Client, msg: Message):
             if e_cfg.estimate_usage:
                 #TODO: 加入 GP 预计算逻辑
                 try:
-                    estimation = await ehentai_estimate(msg.text)
+                    if e_cfg.confirm_estimate_download:
+                        estimation = await ehentai_estimate(msg.text,True)
+                    else:
+                        estimation = await ehentai_estimate(msg.text,True)
                 except Exception as e:
                     await m.edit(f"预估损耗失败：{type(e).__name__}, 错误信息：{e}")
                     raise e
@@ -84,11 +87,11 @@ async def ep(_: Client, msg: Message):
                 # await msg.reply("您尚处测试，没有实际解析。")
                 # return 
                 
-                try:
-                    erp = await ehentai_parse_fastforward(estimation, True)
-                except Exception as e:
-                    await m.edit(f"解析直链失败：{type(e).__name__}, 错误信息：{e}")
-                    raise e
+                # try:
+                #     erp = await ehentai_parse_fastforward(estimation, True)
+                # except Exception as e:
+                #     await m.edit(f"解析直链失败：{type(e).__name__}, 错误信息：{e}")
+                #     raise e
                 
                 if e_cfg.telegram_logger is not None:
                     entities = [
@@ -96,14 +99,75 @@ async def ep(_: Client, msg: Message):
                         MessageEntity(type=enums.MessageEntityType.TEXT_MENTION,offset=len(str("用户 " + str(msg.from_user.id) + "(")),length=len(str(msg.from_user.full_name)),user=msg.from_user),
                         MessageEntity(type=enums.MessageEntityType.TEXT_LINK,offset=len("用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" +" 解析了 "),length=len(str(estimation.archiver_info.title)),url=str(msg.text))]
                     log_message = "用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" \
-                                +" 解析了 "+str(estimation.archiver_info.title) \
-                                + (((" 损耗 "+str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
-                                     " 损耗 "+str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
-                                  (" 损耗 "+str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB 配额."))
+                                +" 解析了 "+str(estimation.archiver_info.title) + "\n预计"\
+                                + ((("损耗 "+str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                     "损耗 "+str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
+                                  ("损耗 "+str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
                     try:
                         await _.send_message(chat_id=e_cfg.telegram_logger,parse_mode=enums.ParseMode.MARKDOWN,text=log_message,entities=entities)
                     except Exception as e:
-                        logger.error("无法在 Telegram 频道中发送解析日志。请检查 config/config.yaml->experimental.tg_logger 是否正确配置为记录目标群/频道/聊天。")
+                        logger.error(f"[{type(e).__name__}]无法在 Telegram 频道中发送解析日志。请检查 config/config.yaml->experimental.tg_logger 是否正确配置为记录目标群/频道/聊天。{e}")
+                if e_cfg.single_gp_limit is not None and e_cfg.single_gp_limit > 0:
+                    if estimation.gp_usage > e_cfg.single_gp_limit:
+                        if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+                            btn = Ikm(
+                                [
+                                    [
+                                        Ikb("GP损耗超过下载限额"+str(round(e_cfg.single_gp_limit/1000,2))+"kGP","lorem"),
+                                    ]
+                                ]
+                            )
+                            caption = "预计消耗" + \
+                                (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
+                                (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota.")) + "\n" +\
+                                "**超出 Bot 限额。**"
+                            await msg.reply_document(estimation.json_path, quote=True, reply_markup=btn,caption=caption)
+                            await m.delete()
+                            os.remove(estimation.json_path)
+                            return
+                if e_cfg.single_quota_limit is not None and e_cfg.single_quota_limit > 0:
+                    if estimation.quota_usage > e_cfg.single_quota_limit:
+                        if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+                            btn = Ikm(
+                                [
+                                    [
+                                        Ikb("Quota 损耗超过下载限额"+str(round(e_cfg.single_quota_limit/1024/1024,2))+"MB","lorem"),
+                                    ]
+                                ]
+                            )
+                            caption = "预计消耗" + \
+                                (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
+                                (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota.")) + "\n" +\
+                                "**超出 Bot 限额。**"
+                            await msg.reply_document(estimation.json_path, quote=True, reply_markup=btn,caption=caption)
+                            await m.delete()
+                            os.remove(estimation.json_path)
+                            return
+                if e_cfg.confirm_estimate_download:
+                    d = f"{estimation.archiver_info.gid}/{estimation.archiver_info.token};"
+                    btn = Ikm(
+                        [
+                            [
+                                Ikb("确认解析", f"confirm_{d}"),
+                            ]
+                        ]
+                    )
+                    caption = "预计消耗" + \
+                        (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                           str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
+                          (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
+                    await msg.reply_document(estimation.json_path, quote=True, reply_markup=btn,caption=caption)
+                    await m.delete()
+                    os.remove(estimation.json_path)
+                    return
+                else:
+                    try:
+                        erp = await ehentai_parse_fastforward(estimation, True)
+                    except Exception as e:
+                        await m.edit(f"解析直链失败：{type(e).__name__}, 错误信息：{e}")
+                        raise e
             else:
                 try:
                     erp = await ehentai_parse(msg.text, True)
@@ -155,6 +219,7 @@ class Usage_Estimation:
     using_gp: bool
     quota_usage: int
     gp_usage: int
+    json_path: str = None
 
 async def ehentai_parse(url: str, o_json: bool = False) -> EPR:
     """解析e-hentai画廊链接"""
@@ -168,10 +233,14 @@ async def ehentai_parse(url: str, o_json: bool = False) -> EPR:
         return EPR(archiver_info, d_url, require_gp, json_path)
     return EPR(archiver_info, d_url, require_gp)
 
-async def ehentai_estimate(url: str) -> Usage_Estimation:
+async def ehentai_estimate(url: str, o_json: bool = False) -> Usage_Estimation:
     ehentai = EHentai(e_cfg.cookies, proxy=bot_cfg.proxy)
     archiver_info = await ehentai.get_archiver_info(url)
     require_gp = await ehentai.get_required_gp(archiver_info)
+
+    if o_json:
+        json_path = ehentai.save_gallery_info(archiver_info, DP)
+        return Usage_Estimation(archiver_info,ehentai,require_gp==0,require_gp!=0,archiver_info.filesize,require_gp,json_path)
     return Usage_Estimation(archiver_info,ehentai,require_gp==0,require_gp!=0,archiver_info.filesize,require_gp)
 
 async def ehentai_parse_fastforward(estimation: Usage_Estimation, o_json: bool = False) -> EPR:
@@ -208,6 +277,53 @@ async def download_archiver(_, cq: CallbackQuery):
     await cq.message.reply_document(file, quote=True)
     await cancel_download(gurl)
 
+@Client.on_callback_query(filters.regex(r"^confirm_"))
+async def confirm_download(_ : Client, cq:CallbackQuery):
+    user_id = cq.from_user.id
+    await cq.message.edit_reply_markup(Ikm([[Ikb("解析中...", "resolving")]]))
+    gurl = cq.data.split("_")[1]
+    try:
+        erp = await ehentai_parse(gurl)
+    except Exception as e:
+        await _.send_message(chat_id=cq.from_user.id,text=f"解析失败：{type(e).__name__}, 错误信息：{e}")
+        raise e
+    d = f"{erp.archiver_info.gid}/{erp.archiver_info.token}"
+    btn = Ikm(
+        [
+            [
+                Ikb("下载", f"download_{d}")
+                if e_cfg.download
+                else Ikb("下载", url=erp.d_url),
+                Ikb("销毁下载", callback_data=f"cancel_{d}"),
+            ]
+        ]
+    )
+
+    await cq.message.edit_reply_markup(btn)
+    if e_cfg.telegram_logger is not None:
+        entities = [
+            MessageEntity(type=enums.MessageEntityType.CODE,offset=len(str("用户 ")),length=len(str(cq.from_user.id))),
+            MessageEntity(type=enums.MessageEntityType.TEXT_MENTION,offset=len(str("用户 " + str(cq.from_user.id) + "(")),length=len(str(cq.from_user.full_name)),user=cq.from_user),
+            ]
+        log_message = "用户 " + str(cq.from_user.id) + "("+str(cq.from_user.full_name) + ")" \
+                    + ((("损耗 "+str(round(erp.require_gp,ndigits=2)) +"kGP.") if erp.require_gp >= 1000 else \
+                        "损耗 "+str(erp.require_gp) +"GP." ) if erp.require_gp > 0 else \
+                    ("损耗 "+str(round(erp.archiver_info.filesize/1024/1024,ndigits=2)) +"MB Quota."))
+        try:
+            await _.send_message(chat_id=e_cfg.telegram_logger,parse_mode=enums.ParseMode.MARKDOWN,text=log_message,entities=entities)
+        except Exception as e:
+            logger.error(f"[{type(e).__name__}]无法在 Telegram 频道中发送解析日志。请检查 config/config.yaml->experimental.tg_logger 是否正确配置为记录目标群/频道/聊天。{e}")
+    uc = parse_count.get_counter(user_id)
+    uc.add_count(erp.require_gp,erp.archiver_info.filesize)
+    logger.info(
+        f"{cq.from_user.full_name} 归档 {gurl} "
+        f"(今日 {uc.day_count} 个) "
+        f"(消耗 {f'{erp.require_gp} GP' if erp.require_gp else '免费'})"
+    )
+
+@Client.on_callback_query(filters.regex(r"^lorem"))
+async def idle(_,cq: CallbackQuery):
+    return await cq.answer("请联系 Bot 管理员修改限额")
 
 @Client.on_callback_query(filters.regex(r"^cancel_"))
 async def cancel_dl(_, cq: CallbackQuery):
