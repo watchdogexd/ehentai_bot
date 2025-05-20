@@ -3,6 +3,11 @@ from pyrogram.types import Message
 
 import utiles.parse_count
 from config.config import e_cfg
+from utiles.utile import is_admin_
+from loguru import logger
+
+from pyrogram.errors.exceptions.bad_request_400 import UserNotParticipant
+from pyrogram import enums
 
 @Client.on_message(filters.command("start"))
 async def start(_, msg: Message):
@@ -18,8 +23,9 @@ async def getid(_, msg: Message):
     await _.send_message(chat_id=msg.chat.id,text=("您的 TgID: `"+str(msg.from_user.id)+"`\n" if msg.from_user is not None else "")+"当前 ChatID: `"+str(msg.chat.id)+"`")
 
 @Client.on_message(filters.command("summary"))
+@logger.catch
 async def summary(_,msg: Message):
-    if msg.from_user.id not in e_cfg.admins:
+    if is_admin_(msg.from_user.id if msg.from_user is not None else 0):
         if e_cfg.member_group is not None:
             try:
                 user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
@@ -36,6 +42,7 @@ async def summary(_,msg: Message):
     await msg.reply(text=utiles.parse_count.parse_count.gen_summary())
 
 @Client.on_message(filters.command("credit"))
+@logger.catch
 async def credit(_,msg: Message):
     if e_cfg.credit:
         return await msg.reply(text=("" if e_cfg.credit is None else (e_cfg.credit)))

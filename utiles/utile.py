@@ -8,7 +8,14 @@ from utiles.parse_count import parse_count
 
 
 def is_admin_(user_id: int) -> bool:
+    if e_cfg.admins is None:
+        return False
     return user_id in e_cfg.admins
+
+def is_whitelist_(user_id: int) -> bool:
+    if e_cfg.whitelist is None:
+        return False
+    return user_id in e_cfg.whitelist
 
 
 # 速率限制

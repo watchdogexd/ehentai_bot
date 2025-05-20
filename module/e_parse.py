@@ -19,7 +19,7 @@ from utiles.download_file import download_file
 from utiles.ehArchiveD import EHentai, GMetaData
 from utiles.filter import is_admin
 from utiles.parse_count import parse_count
-from utiles.utile import is_admin_, rate_limit
+from utiles.utile import is_admin_, rate_limit, is_whitelist_
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 
 scheduler = AsyncIOScheduler()
@@ -44,7 +44,7 @@ async def ep(_: Client, msg: Message):
 
     user_limiter = user_limiters[user_id]
 
-    if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+    if (not is_whitelist_(user_id=user_id)) and (not is_admin_(user_id=user_id)):
         if e_cfg.member_group is not None:
             try:
                 user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
@@ -109,7 +109,7 @@ async def ep(_: Client, msg: Message):
                         logger.error(f"[{type(e).__name__}]无法在 Telegram 频道中发送解析日志。请检查 config/config.yaml->experimental.tg_logger 是否正确配置为记录目标群/频道/聊天。{e}")
                 if e_cfg.single_gp_limit is not None and e_cfg.single_gp_limit > 0:
                     if estimation.gp_usage > e_cfg.single_gp_limit:
-                        if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+                        if (not is_whitelist_(user_id=user_id)) and (not is_admin_(user_id=user_id)):
                             btn = Ikm(
                                 [
                                     [
@@ -128,7 +128,7 @@ async def ep(_: Client, msg: Message):
                             return
                 if e_cfg.single_quota_limit is not None and e_cfg.single_quota_limit > 0:
                     if estimation.quota_usage > e_cfg.single_quota_limit:
-                        if user_id not in e_cfg.whitelist and user_id not in e_cfg.admins:
+                        if (not is_whitelist_(user_id=user_id)) and (not is_admin_(user_id=user_id)):
                             btn = Ikm(
                                 [
                                     [
