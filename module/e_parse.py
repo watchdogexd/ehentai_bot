@@ -53,7 +53,7 @@ async def ep(_: Client, msg: Message):
             except Exception as e:
                 await msg.reply(f"解析失败：{type(e).__name__}, 错误信息：{e}")
                 raise e
-            if user_status.status not in [enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
+            if user_status.status not in [enums.ChatMemberStatus.RESTRICTED,enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                 return await msg.reply(f"您没有权限使用本 Bot。({str(user_status.status)})")
             
 
