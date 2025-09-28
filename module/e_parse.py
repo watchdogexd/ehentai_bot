@@ -100,7 +100,7 @@ async def ep(_: Client, msg: Message):
                         MessageEntity(type=enums.MessageEntityType.TEXT_LINK,offset=len("用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" +" 解析了 "),length=len(str(estimation.archiver_info.title)),url=str(msg.text))]
                     log_message = "用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" \
                                 +" 解析了 "+str(estimation.archiver_info.title) + "\n预计"\
-                                + ((("损耗 "+str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                + ((("损耗 "+str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                                      "损耗 "+str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                                   ("损耗 "+str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
                     try:
