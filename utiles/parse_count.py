@@ -50,17 +50,20 @@ class UserCount:
     def gen_summary(self):
         today_quota = self.get_all_quota()
         today_gp = self.get_all_gp()
-        summary = "Bot 24h 内使用情况报告 \n" + \
-                "共消耗 Quota " + \
-                (str(round(today_quota/1024/1024/1024,2))+"GB \n" if today_quota >= 1024 * 1024 * 1024 else (\
-                str(round(today_quota/1024/1024,2))+"MB \n" if today_quota >= 1024 * 1024 else (\
-                str(round(today_quota/1024,2))+"KB \n"))) + \
-                "共消耗 " + \
-                (str(round(today_gp/1000/1000,2))+"mGP" if today_gp >= 1000*1000 else ( \
-                (str(round(today_gp/1000,2))+"kGP" if today_gp >= 1000 else ( \
-                str(today_gp) + "GP")))) + "\n" + \
-                "共解析 " + str(self.get_all_count()) + " 次 \n" + \
-                ("" if e_cfg.credit is None else (e_cfg.credit))
+        template = "共消耗 Quota " + \
+                    (str(round(today_quota/1024/1024/1024,2))+"GB \n" if today_quota >= 1024 * 1024 * 1024 else (\
+                    str(round(today_quota/1024/1024,2))+"MB \n" if today_quota >= 1024 * 1024 else (\
+                    str(round(today_quota/1024,2))+"KB \n"))) + \
+                    "共消耗 " + \
+                    (str(round(today_gp/1000/1000,2))+"mGP" if today_gp >= 1000*1000 else ( \
+                    (str(round(today_gp/1000,2))+"kGP" if today_gp >= 1000 else ( \
+                    str(today_gp) + "GP")))) + "\n" + \
+                    "共解析 " + str(self.get_all_count()) + " 次 \n" + \
+                    ("" if e_cfg.credit is None else (e_cfg.credit))
+        if e_cfg.day_cleanup:
+            summary = "Bot 24h 内使用情况报告 \n" + template
+        else:
+            summary = "Bot 自启动后 使用情况报告 \n" + template
         return summary
 
     def day_cleanup(self):
