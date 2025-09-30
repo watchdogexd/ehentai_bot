@@ -113,7 +113,7 @@ async def ep(_: Client, msg: Message):
                             btn = Ikm(
                                 [
                                     [
-                                        Ikb("GP损耗超过下载限额"+str(round(e_cfg.single_gp_limit/1000,2))+"kGP","lorem"),
+                                        Ikb("GP 损耗超过下载限额"+str(round(e_cfg.single_gp_limit/1000,2))+"kGP","lorem"),
                                     ]
                                 ]
                             )
@@ -342,7 +342,7 @@ async def cancel_dl(_, cq: CallbackQuery):
 @Client.on_message(filters.command("count") & is_admin)
 async def count(_, msg: Message):
     await msg.reply(
-        f"今日解析次数: __{parse_count.get_all_count()}__\n今日消耗GP: __{parse_count.get_all_gp()}__"
+        f"今日解析次数: __{parse_count.get_all_count()}__\n今日消耗 GP: __{parse_count.get_all_gp()}__"
     )
 
 

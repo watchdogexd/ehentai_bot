@@ -3,7 +3,8 @@ from typing import Callable
 import aiofiles
 import httpx
 
-from config.config import DP
+from config.config import DP, e_cfg
+from alist_upload import uploader
 
 
 async def download_file(
@@ -39,4 +40,7 @@ async def download_file(
                 async with aiofiles.open(save_path, "wb") as f:
                     await f.write(content)
 
+            if e_cfg.alist_upload_status:
+                uploader(save_path)
+                
     return str(save_path)

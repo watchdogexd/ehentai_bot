@@ -37,7 +37,7 @@ def rate_limit(request_limit=3, time_limit=60, total_request_limit=100, group: b
             if uc.day_count >= e_cfg.daily_request_limit:
                 return await message.reply('今日解析次数已用完, 明日再来吧')
             if parse_count.get_all_count() >= total_request_limit:
-                return await message.reply("Bot今日解析次数已达上限，明日再来吧")
+                return await message.reply("Bot 今日解析次数已达上限，明日再来吧")
 
             time_diff = time() - uc.request_time
             if time_diff > time_limit:
