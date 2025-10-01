@@ -2,7 +2,7 @@ from config.config import e_cfg
 
 import mimetypes
 import httpx
-import json
+from pathlib import Path
 
 async def getToken():
     # 判断 url 结尾
@@ -10,10 +10,10 @@ async def getToken():
         url = e_cfg.alist_server + "api/auth/login"
     else:
         url = e_cfg.alist_server + "/api/auth/login"
-    payload = json.dumps({
+    payload = {
         "username": e_cfg.alist_username,
         "password": e_cfg.alist_password
-    })
+    }
     headers = {
         'Content-Type': 'application/json'
     }
@@ -40,7 +40,7 @@ async def uploader(save_path):
             url = e_cfg.alist_server + "api/fs/put"
         else:
             url = e_cfg.alist_server + "/api/fs/put"
-        upload_path = e_cfg.alist_upload_path
+        upload_path = e_cfg.alist_upload_path + Path(save_path).name
         mime_type, _ = mimetypes.guess_type(save_path)
 
         payload = '' # file contents
@@ -54,7 +54,7 @@ async def uploader(save_path):
             with open (save_path, "rb") as f:
                 file_data = f.read()
                 payload = file_data
-                response = await client.put(url, json=payload, headers=headers)
+                response = await client.put(url, data=payload, headers=headers)
 
                 print(f"Status Code: {response.status_code}")
                 print(f"Response Body: {response.text}")

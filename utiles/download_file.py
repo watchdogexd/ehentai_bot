@@ -41,6 +41,6 @@ async def download_file(
                     await f.write(content)
 
             if e_cfg.alist_upload_status:
-                uploader(save_path)
+                await uploader(save_path)
                 
     return str(save_path)
