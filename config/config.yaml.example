@@ -26,8 +26,8 @@ experimental:
   confirm_estimate_download: true # 使用中间界面确认是否解析直链
   single_quota_limit: 0 # 设置为大于0的数字以启用单次 Quota 限制，白名单与 Admin 可以豁免。单位 bytes
   single_gp_limit: 0 # 设置为大于0的数字以启用单次 GP 限制，白名单与 Admin 可以豁免。单位 GP
-  alist_upload_status = false
-  alist_server: ""
-  alist_upload_path = ""
-  alist_username = ""
-  alist_password = ""
+  alist_upload_status = false # 启用下载后，自动上传下载的文件到 alist
+  alist_server: "" # 配置 alist 服务器 ip
+  alist_upload_path = "" # 配置 alist 上传目录
+  alist_username = "" # 配置 alist 用户名
+  alist_password = "" # 配置 alist 密码 (用于获取 alist 临时 token)
