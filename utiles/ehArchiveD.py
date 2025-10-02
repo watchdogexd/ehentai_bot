@@ -221,7 +221,7 @@ class EHentaiError(Exception):
 
 class UnableDownload(EHentaiError):
     def __init__(self):
-        super().__init__("账号无GP/下载流量，无法下载！")
+        super().__init__("账号无 GP/下载流量，无法下载！")
 
 
 class FailedGetDownloadUrl(EHentaiError):
@@ -231,12 +231,12 @@ class FailedGetDownloadUrl(EHentaiError):
 
 class IPBlocking(EHentaiError):
     def __init__(self):
-        super().__init__("IP已被Ehentai封锁，请更换代理")
+        super().__init__("IP 已被 Ehentai 封锁，请更换代理")
 
 
 class FaileGetGP(EHentaiError):
     def __init__(self):
-        super().__init__("获取下载所需GP失败")
+        super().__init__("获取下载所需 GP 失败")
 
 
 if __name__ == "__main__":

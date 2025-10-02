@@ -100,7 +100,7 @@ async def ep(_: Client, msg: Message):
                         MessageEntity(type=enums.MessageEntityType.TEXT_LINK,offset=len("用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" +" 解析了 "),length=len(str(estimation.archiver_info.title)),url=str(msg.text))]
                     log_message = "用户 " + str(msg.from_user.id) + "("+str(msg.from_user.full_name) + ")" \
                                 +" 解析了 "+str(estimation.archiver_info.title) + "\n预计"\
-                                + ((("损耗 "+str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                + ((("损耗 "+str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                                      "损耗 "+str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                                   ("损耗 "+str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
                     try:
@@ -113,7 +113,7 @@ async def ep(_: Client, msg: Message):
                             btn = Ikm(
                                 [
                                     [
-                                        Ikb("GP损耗超过下载限额"+str(round(e_cfg.single_gp_limit/1000,2))+"kGP","lorem"),
+                                        Ikb("GP 损耗超过下载限额"+str(round(e_cfg.single_gp_limit/1000,2))+"kGP","lorem"),
                                     ]
                                 ]
                             )
@@ -265,6 +265,9 @@ async def download_archiver(_, cq: CallbackQuery):
     try:
         epr = await ehentai_parse(gurl)
         file = f"{epr.archiver_info.gid}.zip"
+        # 判断文件大小是否超过 2GB
+        if round(epr.archiver_info.filesize/1024/1024,ndigits=2) > 2048:
+            return await cq.message.reply("文件超过 2048MB，无法下载")
         if not os.path.exists(file):
             """已存在则不再下载"""
             file = await download_file(epr.d_url, file, proxy=bot_cfg.proxy)
@@ -291,8 +294,9 @@ async def confirm_download(_ : Client, cq:CallbackQuery):
     btn = Ikm(
         [
             [
-                Ikb("下载", f"download_{d}")
-                if e_cfg.download
+                Ikb("文件下载", f"download_{d}"),
+                Ikb("直链解析", url=erp.d_url)
+                if e_cfg.download or e_cfg.download_admin_only and is_admin_(user_id)
                 else Ikb("下载", url=erp.d_url),
                 Ikb("销毁下载", callback_data=f"cancel_{d}"),
             ]
@@ -342,7 +346,7 @@ async def cancel_dl(_, cq: CallbackQuery):
 @Client.on_message(filters.command("count") & is_admin)
 async def count(_, msg: Message):
     await msg.reply(
-        f"今日解析次数: __{parse_count.get_all_count()}__\n今日消耗GP: __{parse_count.get_all_gp()}__"
+        f"今日解析次数: __{parse_count.get_all_count()}__\n今日消耗 GP: __{parse_count.get_all_gp()}__"
     )
 
 
