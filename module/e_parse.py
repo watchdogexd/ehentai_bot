@@ -260,14 +260,14 @@ async def cancel_download(url: str) -> bool:
 
 @Client.on_callback_query(filters.regex(r"^download_"))
 async def download_archiver(_, cq: CallbackQuery):
-    # 判断文件大小是否超过 2GB
-    if round(epr.archiver_info.filesize/1024/1024,ndigits=2) > 2048:
-        return await cq.answer("文件超过 2048MB，无法下载",show_alert=True)
     await cq.message.edit_reply_markup(Ikm([[Ikb("下载中...", "downloading")]]))
     gurl = cq.data.split("_")[1]
     try:
         epr = await ehentai_parse(gurl)
         file = f"{epr.archiver_info.gid}.zip"
+        # 判断文件大小是否超过 2GB
+        if round(epr.archiver_info.filesize/1024/1024,ndigits=2) > 2048:
+            return await cq.message.reply("文件超过 2048MB，无法下载")
         if not os.path.exists(file):
             """已存在则不再下载"""
             file = await download_file(epr.d_url, file, proxy=bot_cfg.proxy)

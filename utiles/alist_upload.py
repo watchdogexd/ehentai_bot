@@ -65,7 +65,11 @@ async def uploader(save_path):
             logger.error(f"读取文件 {save_path} 失败: {e}")
             raise e
         async with httpx.AsyncClient() as client:
-            response = await client.put(url, data=payload, headers=headers)
+            try:
+                response = await client.put(url, data=payload, headers=headers)
+                response.raise_for_status() # 400-599 抛出异常
+            except Exception as e:
+                logger.error(f"Alist 上传接口错误: {response.status_code}, body: {response.text}")
+                raise e
 
-            print(f"Status Code: {response.status_code}")
-            print(f"Response Body: {response.text}")
+        logger.info(f"文件 {save_path} 上传成功. URL: {e_cfg.alist_server}/d/{upload_path}. 响应: {response.text}")
