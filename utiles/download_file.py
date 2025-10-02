@@ -4,7 +4,7 @@ import aiofiles
 import httpx
 
 from config.config import DP, e_cfg
-from alist_upload import uploader
+from utiles.alist_upload import uploader
 
 
 async def download_file(
