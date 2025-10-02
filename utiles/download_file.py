@@ -40,7 +40,7 @@ async def download_file(
                 async with aiofiles.open(save_path, "wb") as f:
                     await f.write(content)
 
-            if e_cfg.alist_upload_status:
+            if e_cfg.alist_upload_status and e_cfg.alist_server != "":
                 await uploader(save_path)
                 
     return str(save_path)
