@@ -6,6 +6,7 @@ cookies: # EHentai cookies, F12控制台中获取即可
 destroy_regularly: 0 # 定时销毁下载链接, 单位: 秒, 0为不销毁
 disable: false # 是否禁用解析功能
 download: true # 是否直接下载
+download_admin_only: true # 仅限管理员启用直接下载
 
 request_limit: 10 # 速率限制: 每3600秒内可解析10次, 每个用户每天最多请求50次
 time_limit: 3600

@@ -46,7 +46,6 @@ async def uploader(save_path):
         payload = '' # file contents
         headers = {
         'Authorization': alist_token,
-        # 'Content-Length': str(os.path.getsize(save_path)),
         'File-Path': upload_path,
         'Content-Type': mime_type
         }

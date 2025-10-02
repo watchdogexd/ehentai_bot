@@ -292,7 +292,7 @@ async def confirm_download(_ : Client, cq:CallbackQuery):
         [
             [
                 Ikb("下载", f"download_{d}")
-                if e_cfg.download
+                if e_cfg.download or e_cfg.download_admin_only and is_admin_(user_id)
                 else Ikb("下载", url=erp.d_url),
                 Ikb("销毁下载", callback_data=f"cancel_{d}"),
             ]

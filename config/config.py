@@ -81,6 +81,7 @@ class EConfig(Config):
         self.cookies: list = self.retrieve("cookies",list())
         self.disable: bool = self.retrieve("disable")
         self.download: bool = self.retrieve("download")
+        self.download_admin_only: bool = self.retrieve("download_admin_only")
         self.estimate_usage: bool = self.retrieve("experimental.estimate_usage")
         self.telegram_logger: int = self.retrieve("experimental.tg_logger")
         self.day_cleanup: bool = self.retrieve("experimental.day_cleanup")
