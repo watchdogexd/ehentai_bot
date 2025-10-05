@@ -118,7 +118,7 @@ async def ep(_: Client, msg: Message):
                                 ]
                             )
                             caption = "预计消耗" + \
-                                (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                (((str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                                 str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                                 (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota.")) + "\n" +\
                                 "**超出 Bot 限额。**"
@@ -137,7 +137,7 @@ async def ep(_: Client, msg: Message):
                                 ]
                             )
                             caption = "预计消耗" + \
-                                (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                                (((str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                                 str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                                 (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota.")) + "\n" +\
                                 "**超出 Bot 限额。**"
@@ -155,7 +155,7 @@ async def ep(_: Client, msg: Message):
                         ]
                     )
                     caption = "预计消耗" + \
-                        (((str(round(estimation.gp_usage,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
+                        (((str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                            str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                           (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
                     await msg.reply_document(estimation.json_path, quote=True, reply_markup=btn,caption=caption)
