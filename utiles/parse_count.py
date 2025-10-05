@@ -1,10 +1,12 @@
+import asyncio
 from time import time
 
-from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from loguru import logger
 
 from bot import app
 from config.config import e_cfg
+from pyrogram.methods.utilities.idle import idle
 
 class Counter:
     def __init__(self):
@@ -32,7 +34,6 @@ class Counter:
 
 
 from config.chat_data import chat_data
-
 
 class UserCount:
     def __init__(self):
@@ -66,11 +67,14 @@ class UserCount:
             summary = "Bot 自启动后 使用情况报告 \n" + template
         return summary
 
-    def day_cleanup(self):
+    async def day_cleanup(self):
+        summary = self.gen_summary()
+        if e_cfg.telegram_logger is not None:
+            logger.info(f"准备发送每日总结到 chat_id: {e_cfg.telegram_logger}")
+            await app.send_message(chat_id=e_cfg.telegram_logger, text=summary)
+            logger.info("每日总结发送成功")
         if e_cfg.day_cleanup:
-            if e_cfg.telegram_logger is not None:
-                app.send_message(chat_id=e_cfg.telegram_logger,text=self.gen_summary())
-        self.reset_all_day_count()
+            self.reset_all_day_count()
 
     def get_all_count(self):
         return sum(i.day_count for i in self.data.values())
@@ -86,14 +90,15 @@ class UserCount:
             self.data[uid] = Counter()
         return self.data[uid]
 
-
 parse_count = UserCount()
 
-
-def clear_regularly():
-    scheduler = BackgroundScheduler()
-    scheduler.add_job(parse_count.day_cleanup, "cron", hour=0, minute=0)
+def waiting():
+    scheduler = AsyncIOScheduler()
+    scheduler.add_job(parse_count.day_cleanup, "interval", hours=24)
     scheduler.start()
 
-
-clear_regularly()
+async def clear_regularly():
+    await app.start()
+    waiting()
+    await idle()
+    await app.stop()

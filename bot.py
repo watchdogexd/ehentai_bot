@@ -62,5 +62,6 @@ def r_c(cmd: dict):
 
 
 if __name__ == "__main__":
+    from utiles.parse_count import clear_regularly
     logger.info("bot开始运行...")
-    app.run()
+    app.run(clear_regularly())
