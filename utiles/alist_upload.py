@@ -48,7 +48,10 @@ async def uploader(save_path):
             url = e_cfg.alist_server + "api/fs/put"
         else:
             url = e_cfg.alist_server + "/api/fs/put"
-        upload_path = e_cfg.alist_upload_path + Path(save_path).name
+        if e_cfg.alist_upload_path.endswith("/"):
+            upload_path = e_cfg.alist_upload_path + Path(save_path).name
+        else:
+            upload_path = e_cfg.alist_upload_path + "/" + Path(save_path).name
         mime_type, _ = mimetypes.guess_type(save_path) # 判断文件类型
         if not mime_type:
             mime_type = 'application/octet-stream'

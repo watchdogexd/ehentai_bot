@@ -291,17 +291,13 @@ async def confirm_download(_ : Client, cq:CallbackQuery):
         await _.send_message(chat_id=cq.from_user.id,text=f"解析失败：{type(e).__name__}, 错误信息：{e}")
         raise e
     d = f"{erp.archiver_info.gid}/{erp.archiver_info.token}"
-    btn = Ikm(
-        [
-            [
-                Ikb("文件下载", f"download_{d}"),
-                Ikb("直链解析", url=erp.d_url)
-                if e_cfg.download or e_cfg.download_admin_only and is_admin_(user_id)
-                else Ikb("下载", url=erp.d_url),
-                Ikb("销毁下载", callback_data=f"cancel_{d}"),
-            ]
-        ]
-    )
+
+    is_allowed = e_cfg.download or (e_cfg.download_admin_only and is_admin_(user_id))
+    file_btn = Ikb("文件下载", f"download_{d}") if is_allowed else None
+    link_btn = Ikb("直链解析", url=erp.d_url) if is_allowed else Ikb("下载", url=erp.d_url)
+    cancel_btn = Ikb("销毁下载", callback_data=f"cancel_{d}")
+
+    btn = Ikm([[b for b in [file_btn, link_btn, cancel_btn] if b is not None]])
 
     await cq.message.edit_reply_markup(btn)
     if e_cfg.telegram_logger is not None:
