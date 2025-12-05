@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from limits import user_limiters, global_limiter, user_locks
 
 from loguru import logger
-from pyrogram import Client, filters, enums
+from pyrogram import Client, filters, enums, types
 from pyrogram.types import (
     Message,
     InlineKeyboardMarkup as Ikm,
@@ -48,6 +48,7 @@ async def ep(_: Client, msg: Message):
         if e_cfg.member_group is not None:
             try:
                 user_status = await _.get_chat_member(e_cfg.member_group,msg.from_user.id)
+                logger.info(f"用户 {msg.from_user.id} 在群 {e_cfg.member_group} 的状态为 {str(user_status.status)}") # debug
             except UserNotParticipant as e:
                 return await msg.reply(f"您没有权限使用本 Bot。({type(e).__name__})")
             except Exception as e:
@@ -55,7 +56,12 @@ async def ep(_: Client, msg: Message):
                 raise e
             if user_status.status not in [enums.ChatMemberStatus.RESTRICTED,enums.ChatMemberStatus.MEMBER,enums.ChatMemberStatus.ADMINISTRATOR, enums.ChatMemberStatus.OWNER]:
                 return await msg.reply(f"您没有权限使用本 Bot。({str(user_status.status)})")
-            
+            if user_status.status == enums.ChatMemberStatus.RESTRICTED:
+                perms: types.ChatPermissions = user_status.permissions
+                if perms is not None and perms.can_send_messages is False:
+                    return await msg.reply("您在群组中被禁止发送消息，无法使用本 Bot。")
+                if not user_status.is_member:
+                    return await msg.reply("您不是群组的成员，无法使用本 Bot。")
 
     # 全局与用户限流检查
     if not global_limiter.has_capacity():
