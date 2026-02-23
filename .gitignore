@@ -189,3 +189,4 @@ my_bot.session-journal
 
 # Ignore download files
 data/
+my_bot.session-journal
