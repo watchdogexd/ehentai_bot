@@ -1,4 +1,5 @@
 import os
+import json
 from dataclasses import dataclass
 from limits import user_limiters, global_limiter, user_locks
 
@@ -25,6 +26,19 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 scheduler = AsyncIOScheduler()
 scheduler.start()
 
+def _get_jpn_title_from_json(path: str) -> str:
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+
+        gmeta = data.get("gmetadata", [])
+        if len(gmeta) == 0:
+            return ""
+
+        return gmeta[0].get("title_jpn", "") or ""
+
+    except Exception:
+        return ""
 
 @Client.on_message(
     filters.regex(r"https://(?:e-|ex)hentai.org/g/(\d+)/([a-f0-9]+)") & filters.private
@@ -35,6 +49,7 @@ scheduler.start()
     total_request_limit=e_cfg.total_request_limit,
 )
 @logger.catch
+
 async def ep(_: Client, msg: Message):
     user_id = msg.from_user.id
 
@@ -164,6 +179,10 @@ async def ep(_: Client, msg: Message):
                         (((str(round(estimation.gp_usage/1000,ndigits=2)) +"kGP.") if estimation.gp_usage >= 1000 else \
                            str(estimation.gp_usage) +"GP." ) if estimation.using_gp else \
                           (str(round(estimation.quota_usage/1024/1024,ndigits=2)) +"MB Quota."))
+                    jpn = _get_jpn_title_from_json(estimation.json_path)
+                    logger.info(f"日文名: {jpn}")
+                    if jpn:
+                        caption += f"\n日文名: {jpn}"
                     await msg.reply_document(estimation.json_path, quote=True, reply_markup=btn,caption=caption)
                     await m.delete()
                     os.remove(estimation.json_path)
