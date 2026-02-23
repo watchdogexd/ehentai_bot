@@ -19,8 +19,32 @@ async def help_(_, msg: Message):
     await msg.reply("请发送画廊链接\n例: `https://e-hentai.org/g/2936195/178b3c5fec`")
 
 @Client.on_message(filters.command("getid"))
-async def getid(_, msg: Message):
-    await _.send_message(chat_id=msg.chat.id,text=("您的 TgID: `"+str(msg.from_user.id)+"`\n" if msg.from_user is not None else "")+"当前 ChatID: `"+str(msg.chat.id)+"`")
+async def getid(client, msg: Message):
+    tg_id_text = f"您的 TgID: `{msg.from_user.id}`\n" if msg.from_user is not None else ""
+    chat_id_text = f"当前 ChatID: {msg.chat.id}"
+
+    status_text = ""
+    if e_cfg.member_group is not None and msg.from_user is not None:
+        try:
+            user_status = await client.get_chat_member(
+                e_cfg.member_group,
+                msg.from_user.id
+            )
+            # 如果 user_status.status 不为空就输出
+            if user_status.status:
+                status_text = f"\n用户状态: {user_status.status}"
+        except UserNotParticipant:
+            # 不属于群组的情况可以返回特殊提示
+            status_text = "\n用户状态: UserNotParticipant"
+        except Exception as e:
+            # 解析失败也输出错误信息
+            status_text = f"\n用户状态获取失败：{type(e).name} - {e}"
+
+    # 最终输出
+    await client.send_message(
+        chat_id=msg.chat.id,
+        text=tg_id_text + chat_id_text + status_text
+    )
 
 @Client.on_message(filters.command("summary"))
 @logger.catch

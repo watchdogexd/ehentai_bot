@@ -185,3 +185,7 @@ bot.yaml
 config.yaml
 data.pkl
 my_bot.session
+my_bot.session-journal
+
+# Ignore download files
+data/

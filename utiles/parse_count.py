@@ -69,7 +69,7 @@ class UserCount:
 
     async def day_cleanup(self):
         summary = self.gen_summary()
-        if e_cfg.telegram_logger is not None:
+        if e_cfg.telegram_logger and self.get_all_count():
             logger.info(f"准备发送每日总结到 chat_id: {e_cfg.telegram_logger}")
             await app.send_message(chat_id=e_cfg.telegram_logger, text=summary)
             logger.info("每日总结发送成功")
